@@ -10,7 +10,7 @@ inline void test(BayesClassifier &classifier, const string &testStr) {
 }
 int main() {
 
-    BayesClassifier classifier("training.txt");
+    BayesClassifier classifier("SMSSpamCollection.txt");
     classifier.train();
 
     test(classifier, "I am ok");

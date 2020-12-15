@@ -7,14 +7,12 @@
 
 #include <bits/stdc++.h>
 
-//using namespace std;
+using namespace std;
 using std::vector;
 using std::string;
 using std::map;
 using std::pair;
 using std::set;
-using std::ifstream;
-using std::istringstream;
 
 class BayesClassifier {
 private:
@@ -24,6 +22,24 @@ private:
     map<string, map<string, int>> strC;    //counts of pair(class, str), class -> (str->count)
     int strCount = 0;
 
+    inline static vector<string> work(const string& strings) { //erase illegal characters
+
+        vector<string> res;
+        string tmp;
+        for (auto &p : strings) {
+            if (isdigit(p) or isalpha(p)) {
+                tmp.push_back(p);
+            } else {
+                res.push_back(tmp);
+                tmp.erase(tmp.begin(), tmp.end());
+            }
+        }
+        if (!tmp.empty()) {
+            res.push_back(tmp);
+        }
+        return res;
+    }
+
     double getLogClassProb(const vector<string> &strings, const string &className) {
 
         double res = log(classProb[className]);
@@ -32,6 +48,7 @@ private:
         }
         return res;
     }
+
 public:
     explicit BayesClassifier(const string &trainPath) {
 
@@ -39,13 +56,9 @@ public:
         ifstream file(trainPath);
         string line, tmp;
         while (getline(file, line)) {
-            istringstream stream(line);
-            vector<string> data;
-            while (stream >> tmp) {
-                data.push_back(tmp);
-            }
-            tmp = data.back();
-            data.pop_back();
+            auto data = work(line);
+            tmp = data.front();
+            data.erase(data.begin());
             trainData.emplace_back(data, tmp);
         }
     }
@@ -75,6 +88,12 @@ public:
                 strC[Class][str]++;
             }
         }
+        for (auto &data:strC) {
+            cout << data.first << endl;
+            for (auto &p : data.second) {
+                cout << p.first << ' ' << p.second << endl;
+            }
+        }
         strCount = distStr.size();
 //        cout << "Total unique attributes count: " << strCount << endl;
 
@@ -87,18 +106,12 @@ public:
 
     string test(const string &testData) {
 
-        istringstream stream(testData);
-        vector<string> strings;
-        string tmp;
-        while (stream >> tmp) {
-            strings.push_back(tmp);
-        }
-
+        auto strings = work(testData);
         set<string> book;   //each class only calculate once
         double maxProb = -DBL_MAX, nowProb;
         string resClass;
-        for (auto &data:trainData) {
-            auto &className = data.second;
+        for (auto &data:classSize) {
+            auto &className = data.first;
             if (book.find(className) != book.end()) continue;
             nowProb = getLogClassProb(strings, className);
             if (nowProb > maxProb) {
