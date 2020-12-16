@@ -8,39 +8,39 @@
 #include <bits/stdc++.h>
 
 using namespace std;
-using std::vector;
-using std::string;
-using std::map;
-using std::pair;
-using std::set;
+
+inline vector<string> getFeatures(const string &strings, unordered_set<string> &stopWords) { //erase illegal characters
+
+    stringstream ss(strings);
+    string tmp;
+    vector<string> res;
+    while (ss >> tmp) {
+        //erase non-digit & non-alpha at back
+        while (!tmp.empty() and !isdigit(tmp.back()) and !isalpha(tmp.back())) {
+            tmp.pop_back();
+        }
+        //erase non-digit & non-alpha at front
+        while (!tmp.empty() and !isdigit(tmp[0]) and !isalpha(tmp[0])) {
+            tmp.erase(tmp.begin());
+        }
+        //skip empty & stop words
+        if (!tmp.empty() and stopWords.find(tmp) == stopWords.end()) {
+            res.push_back(tmp);
+        }
+    }
+    return res;
+}
 
 class BayesClassifier {
 private:
-    vector<pair<vector<string>, string>> trainData;    //(strings, className)
+    vector<pair<vector<string>, string>> trainData, validData;    //(strings, className)
+    unordered_set<string> stopWords;    //English stop word
     map<string, double> classProb;   //P(class), class -> prob
     map<string, int> classSize; //unique strings in each class
     map<string, map<string, int>> strC;    //counts of pair(class, str), class -> (str->count)
-    int strCount = 0;
+    int strCount = 0;   //size of unique strings
 
-    inline static vector<string> work(const string& strings) { //erase illegal characters
-
-        vector<string> res;
-        string tmp;
-        for (auto &p : strings) {
-            if (isdigit(p) or isalpha(p)) {
-                tmp.push_back(p);
-            } else {
-                res.push_back(tmp);
-                tmp.erase(tmp.begin(), tmp.end());
-            }
-        }
-        if (!tmp.empty()) {
-            res.push_back(tmp);
-        }
-        return res;
-    }
-
-    double getLogClassProb(const vector<string> &strings, const string &className) {
+    inline double getLogClassProb(const vector<string> &strings, const string &className) {
 
         double res = log(classProb[className]);
         for (auto &str:strings) {
@@ -50,21 +50,45 @@ private:
     }
 
 public:
-    explicit BayesClassifier(const string &trainPath) {
+    explicit BayesClassifier(const string &trainPath, const double trainRate = 0.8) {
 
-        //save training data
-        ifstream file(trainPath);
+        //load English stop word
+        ifstream file("EnglishStopWord.txt");
         string line, tmp;
+        if (!file.is_open()) {
+            cout << "Fail to read \"EnglishStopWord.txt\"!" << endl;
+            exit(0);
+        }
         while (getline(file, line)) {
-            auto data = work(line);
+            stopWords.insert(line);
+        }
+        file.close();
+
+        //load training set
+        file.open(trainPath);
+        if (!file.is_open()) {
+            cout << "Fail to read training file!" << endl;
+            exit(0);
+        }
+        while (getline(file, line)) {
+            auto data = getFeatures(line, stopWords);
             tmp = data.front();
             data.erase(data.begin());
             trainData.emplace_back(data, tmp);
+        }
+        file.close();
+
+        //load validation set
+        int trainSize = int(trainRate * trainData.size());
+        while (trainData.size() > trainSize) {
+            validData.push_back(trainData.back());
+            trainData.pop_back();
         }
     }
 
     void train() {
         //calculate P(class)
+        classProb.clear();
         map<string, int> classCount;    //classNames -> count
         for (auto &p : trainData) {
             classCount[p.second]++;
@@ -74,39 +98,57 @@ public:
         }
 
         //count pair(class, str)
-        set<string> distStr;
+        strC.clear();
+        set<string> uniqueStr;
         for (auto &data:trainData) {
             auto &strings = data.first;
             auto &Class = data.second;
             set<string> book;   //count str once
 
             for (auto &str:strings) {
-                distStr.insert(str);
+                uniqueStr.insert(str);
                 book.insert(str);
             }
             for (auto &str:book) {  //str only count once
                 strC[Class][str]++;
             }
         }
-        for (auto &data:strC) {
-            cout << data.first << endl;
-            for (auto &p : data.second) {
-                cout << p.first << ' ' << p.second << endl;
-            }
-        }
-        strCount = distStr.size();
-//        cout << "Total unique attributes count: " << strCount << endl;
+        strCount = uniqueStr.size();
 
         //count unique strings in each class
+        classSize.clear();
         for (auto &p : strC) {
             classSize[p.first] = p.second.size();
-//            cout << p.first << ": " << classSize[p.first] << endl;
         }
+    }
+
+    void showValid() {
+
+        int correct = 0;
+        for (auto& data : validData) {
+            set<string> book;   //each class only calculate once
+            double maxProb = -DBL_MAX, nowProb;
+            string resClass;
+            for (auto &p:classSize) {
+                auto &className = p.first;
+                if (book.find(className) != book.end()) continue;
+                nowProb = getLogClassProb(data.first, className);
+                if (nowProb > maxProb) {
+                    maxProb = nowProb;
+                    resClass = className;
+                }
+                book.insert(className);
+            }
+            if (resClass == data.second) {
+                correct++;
+            }
+        }
+        cout << "Accuracy of validation set: " << correct << " / " << validData.size() << " = "<< double(correct) / validData.size() << endl;
     }
 
     string test(const string &testData) {
 
-        auto strings = work(testData);
+        auto strings = getFeatures(testData, stopWords);
         set<string> book;   //each class only calculate once
         double maxProb = -DBL_MAX, nowProb;
         string resClass;

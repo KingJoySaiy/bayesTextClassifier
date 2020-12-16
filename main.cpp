@@ -1,8 +1,5 @@
 #include "BayesClassifier.h"
 
-using std::cout;
-using std::endl;
-
 inline void test(BayesClassifier &classifier, const string &testStr) {
 
     string data = classifier.test(testStr);
@@ -10,13 +7,19 @@ inline void test(BayesClassifier &classifier, const string &testStr) {
 }
 int main() {
 
+    /*
+     * 文本预处理：去除中文分词（python jieba)，去除停顿词
+     * 使用词频哈希表，不使用“词袋”或“字典树”的原因
+     * */
+
     BayesClassifier classifier("SMSSpamCollection.txt");
     classifier.train();
+    classifier.showValid();
 
     test(classifier, "I am ok");
     test(classifier, "credit Hot");
     test(classifier, "Chicago is a big city");
-    test(classifier, "king of sadness of try");
+    test(classifier, "call for premium phone services");
 
     return 0;
 }
