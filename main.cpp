@@ -14,12 +14,15 @@ int main() {
 
     BayesClassifier classifier("SMSSpamCollection.txt");
     classifier.train();
-    classifier.showValid();
 
-    test(classifier, "I am ok");
-    test(classifier, "credit Hot");
-    test(classifier, "Chicago is a big city");
-    test(classifier, "call for premium phone services");
+    auto start = clock();
+    classifier.showValid();
+    cout << double(clock() - start) / CLOCKS_PER_SEC << endl;
+
+//    test(classifier, "I am ok");
+//    test(classifier, "credit Hot");
+//    test(classifier, "Chicago is a big city");
+//    test(classifier, "call for premium phone services");
 
     return 0;
 }

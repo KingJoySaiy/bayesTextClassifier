@@ -7,6 +7,8 @@
 
 #include <bits/stdc++.h>
 
+#pragma GCC optimize(3)
+
 using namespace std;
 
 inline vector<string> getFeatures(const string &strings, unordered_set<string> &stopWords) { //erase illegal characters
@@ -126,18 +128,15 @@ public:
 
         int correct = 0;
         for (auto& data : validData) {
-            set<string> book;   //each class only calculate once
             double maxProb = -DBL_MAX, nowProb;
             string resClass;
             for (auto &p:classSize) {
                 auto &className = p.first;
-                if (book.find(className) != book.end()) continue;
                 nowProb = getLogClassProb(data.first, className);
                 if (nowProb > maxProb) {
                     maxProb = nowProb;
                     resClass = className;
                 }
-                book.insert(className);
             }
             if (resClass == data.second) {
                 correct++;
