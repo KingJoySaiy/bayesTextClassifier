@@ -7,8 +7,6 @@
 
 #include <bits/stdc++.h>
 
-#pragma GCC optimize(3)
-
 using namespace std;
 
 inline vector<string> getFeatures(const string &strings, unordered_set<string> &stopWords) { //erase illegal characters
@@ -52,7 +50,7 @@ private:
     }
 
 public:
-    explicit BayesClassifier(const string &trainPath, const double trainRate = 0.8) {
+    explicit BayesClassifier(const string &trainPath = "SMSSpamCollection.txt", const double trainRate = 0.8) {
 
         //load English stop word
         ifstream file("EnglishStopWord.txt");
@@ -125,7 +123,7 @@ public:
     }
 
     void showValid() {
-
+        auto start = clock();
         int correct = 0;
         for (auto& data : validData) {
             double maxProb = -DBL_MAX, nowProb;
@@ -142,26 +140,40 @@ public:
                 correct++;
             }
         }
-        cout << "Accuracy of validation set: " << correct << " / " << validData.size() << " = "<< double(correct) / validData.size() << endl;
+        cout << "Accuracy of validation: " << correct << " / " << validData.size() << " = "<< double(correct) / validData.size() << endl;
+        auto end = clock();
+        cout << "Validation time:" << double(end - start) / CLOCKS_PER_SEC << "s" << endl;
     }
 
-    string test(const string &testData) {
+    string testString(const string &testData) {
 
         auto strings = getFeatures(testData, stopWords);
-        set<string> book;   //each class only calculate once
         double maxProb = -DBL_MAX, nowProb;
         string resClass;
         for (auto &data:classSize) {
             auto &className = data.first;
-            if (book.find(className) != book.end()) continue;
             nowProb = getLogClassProb(strings, className);
             if (nowProb > maxProb) {
                 maxProb = nowProb;
                 resClass = className;
             }
-            book.insert(className);
         }
         return resClass;
+    }
+
+    pair<string, string> testFile(const string &testPath) { //strings in test file, predict label
+
+        ifstream file(testPath);
+        string line, res;
+        if (!file.is_open()) {
+            cout << "Fail to read test file!" << endl;
+            exit(0);
+        }
+        while (getline(file, line)) {
+            res += line + " ";
+        }
+        file.close();
+        return make_pair(res, testString(res));
     }
 };
 
