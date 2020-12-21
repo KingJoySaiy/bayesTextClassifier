@@ -1,29 +1,28 @@
 import pandas as pd
-from sklearn.naive_bayes import BernoulliNB, MultinomialNB, GaussianNB
+from sklearn.naive_bayes import MultinomialNB, BernoulliNB
 from sklearn.feature_extraction import text
 import time
 
 # load training file
-filePath = "SMSSpamCollection.txt"
-df = pd.read_csv(filePath, delimiter='\t', header=None)
-trainSize = int(len(df) * 0.8)
-validSize = len(df) - trainSize
+df = pd.read_csv("SMSSpamCollection.txt", delimiter='\t', header=None)
+trainSize, validSize = int(len(df) * 0.8), len(df) - int(len(df) * 0.8)
 
-# get X & y , then vectorization
+# training
 y, X = df[0][:trainSize], df[1][:trainSize]
-vectorizer = text.TfidfVectorizer()
+vectorizer = text.TfidfVectorizer()   # vectorization
+# vectorizer = text.HashingVectorizer()
 X = vectorizer.fit_transform(X)
+model = MultinomialNB()
+# model = BernoulliNB()
 
-# use Bernoulli model
-model = BernoulliNB()
-# model = MultinomialNB()
+
 model.fit(X, y)
 
 # validation
 start = time.perf_counter()
 string, label = df[1].to_list(), df[0].to_list()
 testX = vectorizer.transform(df[1][-validSize:])
-predictions = model.predict(testX)
+predictions = list(model.predict(testX))
 ok = 0
 for i in range(validSize):
     if predictions[i] == label[-validSize + i]:

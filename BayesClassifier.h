@@ -50,6 +50,7 @@ private:
     }
 
 public:
+    //constructer, load English stop word ,training set & validation set
     explicit BayesClassifier(const string &trainPath = "SMSSpamCollection.txt", const double trainRate = 0.8) {
 
         //load English stop word
@@ -86,7 +87,7 @@ public:
         }
     }
 
-    void train() {
+    void train() {  //start training
         //calculate P(class)
         classProb.clear();
         map<string, int> classCount;    //classNames -> count
@@ -122,7 +123,7 @@ public:
         }
     }
 
-    void showValid() {
+    void showValid() {  //show result of validation set
         auto start = clock();
         int correct = 0;
         for (auto& data : validData) {
@@ -145,7 +146,7 @@ public:
         cout << "Validation time:" << double(end - start) / CLOCKS_PER_SEC << "s" << endl;
     }
 
-    string testString(const string &testData) {
+    string testString(const string &testData) { //test strings
 
         auto strings = getFeatures(testData, stopWords);
         double maxProb = -DBL_MAX, nowProb;
@@ -161,7 +162,7 @@ public:
         return resClass;
     }
 
-    pair<string, string> testFile(const string &testPath) { //strings in test file, predict label
+    pair<string, string> testFile(const string &testPath) { //test a file
 
         ifstream file(testPath);
         string line, res;
